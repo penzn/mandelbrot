@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Mandelbrot</title>
+        <link rel="icon" href="data:;base64,=">
+    </head>
+    <body>
+        <div>
+        <canvas id="fractal" width="600" height="400"></canvas>
+        </div>
+	<div id="log">
+        </div>
+        <script type="text/javascript">
+            let imports = {}
+            let data = null
+            let mem = null
+            var canvas = document.getElementById('fractal');
+            var ctx = canvas.getContext('2d');
+            let width = canvas.width;
+            let height = canvas.height;
+
+            function CStrConvert(start) {
+                let str = "";
+                let i = start;
+                while (mem[i] != 0) {
+                    // TextDecoder is not awailable in all engines yet
+                    str += String.fromCharCode(mem[i]);
+                    ++i;
+                }
+                return str;
+	    }
+
+            let log = function(str) {
+                document.getElementById("log").innerHTML += str + "<br>";
+            }
+
+            imports["memory"] = new WebAssembly.Memory({initial:64});
+            imports["refresh"] = function() {
+                ctx.putImageData(new ImageData(data, width, height), 0, 0);
+            }
+
+            fetch("animation.wasm").then(resp =>
+                resp.arrayBuffer()
+            ).then(buffer =>
+                WebAssembly.instantiate(buffer, { "env" : imports})
+	    ).then(i_ => {
+                let inst = i_.instance;
+                let instance = {};
+                instance.fill = inst.exports.fill;
+                instance.examine = inst.exports.examine;
+                instance.heap_base = inst.exports.__heap_base;
+
+                let offset = instance.heap_base; // In place of "malloc"
+
+                data = new Uint8ClampedArray(imports["memory"]["buffer"], offset, width*height*4);
+                mem = new Uint8Array(imports["memory"]["buffer"]);
+
+                instance.fill(offset, width, height);
+	    });
+        </script>
+    </body>
+</html>
