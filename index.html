@@ -1,12 +1,15 @@
 <!DOCTYPE html>
 <html>
     <head>
-        <title>Mandelbrot</title>
+        <title>Mandelbrot Animation</title>
         <link rel="icon" href="data:;base64,=">
     </head>
     <body>
+        <button id="animate" disabled=true>Start</button>
         <div>
         <canvas id="fractal" width="600" height="400"></canvas>
+        </div>
+	<div id="info">
         </div>
 	<div id="log">
         </div>
@@ -14,6 +17,8 @@
             let imports = {}
             let data = null
             let mem = null
+            let frame_func = null
+            let animate = false;
             var canvas = document.getElementById('fractal');
             var ctx = canvas.getContext('2d');
             let width = canvas.width;
@@ -34,9 +39,25 @@
                 document.getElementById("log").innerHTML += str + "<br>";
             }
 
+            let toggle_animation = function() {
+                if (animate) {
+                    animate = false;
+                    document.getElementById("animate").innerHTML = "Start";
+                } else {
+                    animate = true;
+                    window.requestAnimationFrame(frame_func);
+                    document.getElementById("animate").innerHTML = "Stop";
+                }
+            }
+
             imports["memory"] = new WebAssembly.Memory({initial:64});
             imports["refresh"] = function() {
                 ctx.putImageData(new ImageData(data, width, height), 0, 0);
+                if (animate)
+                    window.requestAnimationFrame(frame_func);
+            }
+            imports["print_fps"] = function(fps) {
+                document.getElementById("info").innerHTML = "FPS: " + (Math.round(fps * 100) / 100);
             }
 
             fetch("animation.wasm").then(resp =>
@@ -48,7 +69,9 @@
                 let instance = {};
                 instance.init = inst.exports.init;
                 instance.fill = inst.exports.fill;
+                instance.zoom = inst.exports.zoom_step;
                 instance.heap_base = inst.exports.__heap_base;
+                frame_func = instance.zoom;
 
                 let offset = instance.heap_base; // In place of "malloc"
 
@@ -57,6 +80,9 @@
 
                 instance.init(offset, width, height);
                 instance.fill();
+                // Enable animation button
+                document.getElementById("animate").disabled = false;
+                document.getElementById("animate").onclick = toggle_animation;
 	    });
         </script>
     </body>
