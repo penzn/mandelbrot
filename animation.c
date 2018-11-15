@@ -1,6 +1,24 @@
 #include <stddef.h>
 #include "mandelbrot.h"
 
+/** Settings
+ */
+struct {
+  // HTML5 bitmap
+  struct {
+    unsigned char * ptr;
+    int width;
+    int height;
+  } canvas;
+  // Fractal
+  float x; // Lower left corner coordinates
+  float y;
+  float width; // Size of the picture
+  float height;
+} s;
+
+/** Color selection for single pixel
+ */
 unsigned int pick_color(float x0, float y0) {
   unsigned char r,g,b;
   float x = 0.0;
@@ -28,28 +46,39 @@ unsigned int pick_color(float x0, float y0) {
   return ((r << 24) | (g << 16) | (b << 8) | 0xFF);
 }
 
-/** Draw the fractal in a byte array
+/** Initialize fractal
  * \param pix byte array in RGBA order
  * \param width of the picture in pixels
  * \param height of the picture in pixels
  */
-export void fill(unsigned char * pix, int width, int height) {
-  const float M_X = -2.0;
-  const float M_Y = -1.0;
-  const float M_WIDTH = 3.0;
-  const float M_HEIGHT = 2.0;
+export void init(unsigned char * pix, int width, int height) {
+  s.canvas.ptr = pix;
+  s.canvas.width = width;
+  s.canvas.height = height;
+  s.x = -2.0;
+  s.y = -1.0;
+  s.width = 3.0;
+  s.height = 2.0;
+}
+
+/** Draw the fractal in a byte array
+ */
+export void fill(void) {
+  unsigned char * p = s.canvas.ptr;
+  int height = s.canvas.height;
+  int width = s.canvas.width;
   unsigned x, y;
 
   for (y = 0; y < height; ++y) {
     for (x = 0; x < width; ++x) {
       // Map coordinates to Mandelbrot plane
-      float x_m = M_X + M_WIDTH * x / width;
-      float y_m = M_Y + M_HEIGHT * y / height;
+      float x_m = s.x + s.width * x / width;
+      float y_m = s.y + s.height * y / height;
       unsigned rgba = pick_color(x_m, y_m);
-      *(pix++) = (rgba >> 24) & 0xFF;
-      *(pix++) = (rgba >> 16) & 0xFF;
-      *(pix++) = (rgba >> 8)  & 0xFF;
-      *(pix++) =  rgba        & 0xFF;
+      *(p++) = (rgba >> 24) & 0xFF;
+      *(p++) = (rgba >> 16) & 0xFF;
+      *(p++) = (rgba >> 8)  & 0xFF;
+      *(p++) =  rgba        & 0xFF;
     }
   }
 

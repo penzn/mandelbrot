@@ -46,8 +46,8 @@
 	    ).then(i_ => {
                 let inst = i_.instance;
                 let instance = {};
+                instance.init = inst.exports.init;
                 instance.fill = inst.exports.fill;
-                instance.examine = inst.exports.examine;
                 instance.heap_base = inst.exports.__heap_base;
 
                 let offset = instance.heap_base; // In place of "malloc"
@@ -55,7 +55,8 @@
                 data = new Uint8ClampedArray(imports["memory"]["buffer"], offset, width*height*4);
                 mem = new Uint8Array(imports["memory"]["buffer"]);
 
-                instance.fill(offset, width, height);
+                instance.init(offset, width, height);
+                instance.fill();
 	    });
         </script>
     </body>
